@@ -1,0 +1,507 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Masivos Cartera</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: #f0f4f8;
+    }
+
+    .container {
+      background: #fff;
+      border-radius: 16px;
+      padding: 40px;
+      width: 100%;
+      max-width: 560px;
+      box-shadow: 0 4px 24px rgba(0,0,0,.08);
+    }
+
+    .container h2 {
+      font-size: 20px;
+      color: #2a9d8f;
+      margin-bottom: 24px;
+      text-align: center;
+    }
+
+    .drop-zone {
+      border: 2.5px dashed #3bbfa0;
+      border-radius: 12px;
+      background: #e8f8f4;
+      padding: 48px 24px;
+      text-align: center;
+      cursor: pointer;
+      transition: background .2s, border-color .2s;
+    }
+
+    .drop-zone.dragover { background: #d0f0e8; border-color: #2a9d8f; }
+    .drop-zone.has-file { padding: 24px; }
+    .drop-zone.has-file .drop-initial { display: none; }
+
+    .drop-zone svg.cloud-icon { width: 56px; height: 56px; margin-bottom: 12px; }
+    .drop-zone p { color: #555; font-size: 15px; margin-bottom: 14px; }
+
+    .drop-zone .browse-btn {
+      display: inline-block;
+      padding: 8px 22px;
+      border: 2px solid #3bbfa0;
+      border-radius: 6px;
+      color: #3bbfa0;
+      font-weight: 600;
+      font-size: 14px;
+      background: transparent;
+      cursor: pointer;
+      transition: background .2s, color .2s;
+    }
+
+    .drop-zone .browse-btn:hover { background: #3bbfa0; color: #fff; }
+
+    .file-list { display: none; text-align: left; width: 100%; }
+    .file-list.visible { display: block; }
+
+    .file-list-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 10px;
+    }
+
+    .file-list-header span { font-size: 13px; font-weight: 600; color: #2a9d8f; }
+
+    .file-list-header button {
+      background: none; border: none; color: #e74c3c;
+      font-size: 12px; cursor: pointer; font-weight: 600;
+    }
+
+    .file-list-header button:hover { text-decoration: underline; }
+
+    .file-item {
+      display: flex; align-items: center; gap: 10px;
+      padding: 8px 12px; background: #fff; border-radius: 8px;
+      margin-bottom: 6px; font-size: 13px; color: #333;
+      border: 1px solid #e0e0e0;
+    }
+
+    .file-item .ext-badge {
+      display: inline-block; padding: 2px 8px; border-radius: 4px;
+      font-size: 11px; font-weight: 700; text-transform: uppercase;
+      color: #fff; min-width: 42px; text-align: center; flex-shrink: 0;
+    }
+
+    .ext-json { background: #f39c12; }
+    .ext-xml  { background: #3498db; }
+    .ext-pdf  { background: #e74c3c; }
+    .ext-zip  { background: #8e44ad; }
+    .ext-other { background: #95a5a6; }
+
+    .file-item .fname { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .file-item .fsize { color: #999; font-size: 12px; flex-shrink: 0; }
+
+    .file-item .remove-file {
+      background: none; border: none; color: #ccc;
+      font-size: 16px; cursor: pointer; padding: 0 4px; line-height: 1; flex-shrink: 0;
+    }
+
+    .file-item .remove-file:hover { color: #e74c3c; }
+
+    .add-more {
+      display: inline-flex; align-items: center; gap: 4px;
+      margin-top: 8px; font-size: 13px; color: #3bbfa0;
+      cursor: pointer; font-weight: 600; background: none; border: none;
+    }
+
+    .add-more:hover { text-decoration: underline; }
+
+    .field-group { margin-top: 28px; }
+
+    .field-group label {
+      display: flex; align-items: center; gap: 8px;
+      font-size: 14px; font-weight: 600; color: #333; margin-bottom: 8px;
+    }
+
+    .field-group .auto-tag {
+      font-size: 11px; background: #d6f5ec; color: #2a9d8f;
+      padding: 2px 8px; border-radius: 4px; font-weight: 600;
+    }
+
+    .field-group .manual-tag {
+      font-size: 11px; background: #fff3cd; color: #856404;
+      padding: 2px 8px; border-radius: 4px; font-weight: 600;
+    }
+
+    .field-group input {
+      width: 100%; padding: 12px 14px; border: 1.5px solid #ccc;
+      border-radius: 8px; font-size: 15px; outline: none;
+      transition: border-color .2s;
+    }
+
+    .field-group input:focus { border-color: #3bbfa0; }
+    .field-group input.auto-filled { border-color: #2a9d8f; background: #f0faf7; }
+
+    .submit-btn {
+      margin-top: 28px; width: 100%; padding: 14px;
+      background: #3bbfa0; color: #fff; border: none;
+      border-radius: 8px; font-size: 16px; font-weight: 600;
+      cursor: pointer; transition: background .2s;
+    }
+
+    .submit-btn:hover { background: #2a9d8f; }
+    .submit-btn:disabled { background: #b0d8cd; cursor: not-allowed; }
+
+    input[type="file"] { display: none; }
+
+    /* Log panel */
+    .log-panel {
+      display: none;
+      margin-top: 24px;
+      border: 1px solid #e0e0e0;
+      border-radius: 10px;
+      overflow: hidden;
+    }
+
+    .log-panel.visible { display: block; }
+
+    .log-panel-header {
+      background: #f7f7f7;
+      padding: 10px 16px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      border-bottom: 1px solid #e0e0e0;
+    }
+
+    .log-panel-header span { font-size: 13px; font-weight: 600; color: #555; }
+
+    .log-panel-header .timer {
+      font-size: 13px; font-weight: 700; color: #2a9d8f;
+      font-variant-numeric: tabular-nums;
+    }
+
+    .progress-bar-bg {
+      height: 4px; background: #e0e0e0;
+    }
+
+    .progress-bar-fill {
+      height: 100%; background: #3bbfa0;
+      width: 0%; transition: width .3s ease;
+    }
+
+    .log-content {
+      max-height: 200px; overflow-y: auto;
+      padding: 12px 16px; font-size: 12px;
+      font-family: 'Cascadia Code', 'Consolas', monospace;
+      color: #444; background: #fafafa;
+      line-height: 1.6;
+    }
+
+    .log-content .log-error { color: #e74c3c; }
+    .log-content .log-success { color: #27ae60; }
+    .log-content .log-info { color: #555; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h2>Masivos Cartera</h2>
+
+    <div class="drop-zone" id="dropZone">
+      <div class="drop-initial">
+        <svg class="cloud-icon" viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg">
+          <path d="M52 40a12 12 0 0 0-1.4-24A20 20 0 0 0 12 24a16 16 0 0 0 1 32h10" fill="none" stroke="#3bbfa0" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+          <path d="M32 56V34m-8 8 8-8 8 8" fill="none" stroke="#3bbfa0" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+        <p>Arrastra y suelta archivos o ZIPs aquí</p>
+        <span class="browse-btn">Seleccionar Archivos</span>
+      </div>
+
+      <div class="file-list" id="fileList">
+        <div class="file-list-header">
+          <span id="fileCount">0 archivos</span>
+          <button id="clearAll">Limpiar todo</button>
+        </div>
+        <div id="fileItems"></div>
+        <button class="add-more" id="addMore">+ Agregar más archivos</button>
+      </div>
+    </div>
+
+    <input type="file" id="fileInput" multiple>
+
+    <div class="field-group">
+      <label for="invoiceNumber">
+        Número de Factura
+        <span class="auto-tag" id="autoTag" style="display:none">Detectado</span>
+        <span class="manual-tag" id="manualTag" style="display:none">Manual</span>
+      </label>
+      <input type="text" id="invoiceNumber" placeholder="Se detecta automáticamente de los archivos...">
+    </div>
+
+    <button class="submit-btn" id="submitBtn">Enviar</button>
+
+    <div class="log-panel" id="logPanel">
+      <div class="log-panel-header">
+        <span id="logStatus">Procesando...</span>
+        <span class="timer" id="logTimer">00:00</span>
+      </div>
+      <div class="progress-bar-bg">
+        <div class="progress-bar-fill" id="progressBar"></div>
+      </div>
+      <div class="log-content" id="logContent"></div>
+    </div>
+  </div>
+
+  <script>
+    const dropZone = document.getElementById('dropZone');
+    const fileInput = document.getElementById('fileInput');
+    const fileListEl = document.getElementById('fileList');
+    const fileItemsEl = document.getElementById('fileItems');
+    const fileCountEl = document.getElementById('fileCount');
+    const invoiceInput = document.getElementById('invoiceNumber');
+    const autoTag = document.getElementById('autoTag');
+    const manualTag = document.getElementById('manualTag');
+    const submitBtn = document.getElementById('submitBtn');
+    const logPanel = document.getElementById('logPanel');
+    const logStatus = document.getElementById('logStatus');
+    const logTimer = document.getElementById('logTimer');
+    const progressBar = document.getElementById('progressBar');
+    const logContent = document.getElementById('logContent');
+
+    let selectedFiles = [];
+
+    // --- Drop zone ---
+    dropZone.addEventListener('click', e => {
+      if (e.target.closest('#addMore') || e.target.closest('#clearAll') || e.target.closest('.remove-file')) return;
+      fileInput.click();
+    });
+
+    document.getElementById('addMore').addEventListener('click', e => { e.stopPropagation(); fileInput.click(); });
+
+    document.getElementById('clearAll').addEventListener('click', e => {
+      e.stopPropagation();
+      selectedFiles = [];
+      renderFiles();
+      clearInvoice();
+    });
+
+    dropZone.addEventListener('dragover', e => { e.preventDefault(); dropZone.classList.add('dragover'); });
+    dropZone.addEventListener('dragleave', () => dropZone.classList.remove('dragover'));
+
+    dropZone.addEventListener('drop', e => {
+      e.preventDefault();
+      dropZone.classList.remove('dragover');
+      addFiles(e.dataTransfer.files);
+    });
+
+    fileInput.addEventListener('change', () => { addFiles(fileInput.files); fileInput.value = ''; });
+
+    function addFiles(list) {
+      for (const f of list) {
+        if (!selectedFiles.some(sf => sf.name === f.name && sf.size === f.size))
+          selectedFiles.push(f);
+      }
+      renderFiles();
+      detectInvoiceNumber();
+    }
+
+    function removeFile(i) {
+      selectedFiles.splice(i, 1);
+      renderFiles();
+      selectedFiles.length > 0 ? detectInvoiceNumber() : clearInvoice();
+    }
+
+    function fmtSize(b) {
+      if (b < 1024) return b + ' B';
+      if (b < 1048576) return (b / 1024).toFixed(1) + ' KB';
+      return (b / 1048576).toFixed(1) + ' MB';
+    }
+
+    function extClass(n) {
+      const e = n.split('.').pop().toLowerCase();
+      return e === 'json' ? 'ext-json' : e === 'xml' ? 'ext-xml' : e === 'pdf' ? 'ext-pdf' : e === 'zip' ? 'ext-zip' : 'ext-other';
+    }
+
+    function hasZips() {
+      return selectedFiles.some(f => f.name.toLowerCase().endsWith('.zip'));
+    }
+
+    function renderFiles() {
+      fileItemsEl.innerHTML = '';
+      if (!selectedFiles.length) {
+        dropZone.classList.remove('has-file');
+        fileListEl.classList.remove('visible');
+        return;
+      }
+      dropZone.classList.add('has-file');
+      fileListEl.classList.add('visible');
+      fileCountEl.textContent = selectedFiles.length + (selectedFiles.length === 1 ? ' archivo' : ' archivos');
+      selectedFiles.forEach((f, i) => {
+        const d = document.createElement('div');
+        d.className = 'file-item';
+        d.innerHTML = `
+          <span class="ext-badge ${extClass(f.name)}">${f.name.split('.').pop().toUpperCase()}</span>
+          <span class="fname" title="${f.name}">${f.name}</span>
+          <span class="fsize">${fmtSize(f.size)}</span>
+          <button class="remove-file" data-idx="${i}" title="Quitar">&times;</button>`;
+        fileItemsEl.appendChild(d);
+      });
+      fileItemsEl.querySelectorAll('.remove-file').forEach(btn =>
+        btn.addEventListener('click', e => { e.stopPropagation(); removeFile(+btn.dataset.idx); })
+      );
+    }
+
+    // --- Invoice detection ---
+    function extractNumbers(name) { return (name.replace(/\.[^.]+$/, '').match(/\d+/g)) || []; }
+
+    function detectInvoiceNumber() {
+      if (!selectedFiles.length) return;
+
+      if (hasZips()) {
+        invoiceInput.value = '';
+        invoiceInput.classList.remove('auto-filled');
+        autoTag.style.display = 'none';
+        manualTag.style.display = 'none';
+        invoiceInput.placeholder = 'Opcional — las facturas se extraen del ZIP';
+        invoiceInput.disabled = false;
+        return;
+      }
+
+      const sets = selectedFiles.map(f => extractNumbers(f.name));
+      let common = null;
+      for (const num of sets[0]) {
+        if (sets.every(s => s.includes(num))) { common = num; break; }
+      }
+      if (common) {
+        invoiceInput.value = common;
+        invoiceInput.classList.add('auto-filled');
+        autoTag.style.display = '';
+        manualTag.style.display = 'none';
+      } else if (selectedFiles.length === 1 && sets[0].length === 1) {
+        invoiceInput.value = sets[0][0];
+        invoiceInput.classList.add('auto-filled');
+        autoTag.style.display = '';
+        manualTag.style.display = 'none';
+      } else {
+        showManualMode();
+      }
+    }
+
+    function showManualMode() {
+      invoiceInput.classList.remove('auto-filled');
+      autoTag.style.display = 'none';
+      manualTag.style.display = '';
+      invoiceInput.placeholder = 'No se detectó, ingrese manualmente...';
+      invoiceInput.focus();
+    }
+
+    function clearInvoice() {
+      invoiceInput.value = '';
+      invoiceInput.classList.remove('auto-filled');
+      autoTag.style.display = 'none';
+      manualTag.style.display = 'none';
+      invoiceInput.placeholder = 'Se detecta automáticamente de los archivos...';
+    }
+
+    invoiceInput.addEventListener('input', () => {
+      if (invoiceInput.value.trim()) { invoiceInput.classList.remove('auto-filled'); autoTag.style.display = 'none'; }
+    });
+
+    // --- Submit & streaming logs ---
+    function appendLog(msg, cls = 'log-info') {
+      const line = document.createElement('div');
+      line.className = cls;
+      line.textContent = msg;
+      logContent.appendChild(line);
+      logContent.scrollTop = logContent.scrollHeight;
+    }
+
+    submitBtn.addEventListener('click', async () => {
+      const invoice = invoiceInput.value.trim();
+      if (!selectedFiles.length) { alert('Por favor selecciona los archivos.'); return; }
+      if (!invoice && !hasZips()) { alert('Por favor ingresa el número de factura.'); return; }
+
+      submitBtn.disabled = true;
+      submitBtn.textContent = 'Procesando...';
+
+      logPanel.classList.add('visible');
+      logContent.innerHTML = '';
+      progressBar.style.width = '0%';
+      logStatus.textContent = 'Procesando...';
+      logTimer.textContent = '00:00';
+      logTimer.style.color = '#2a9d8f';
+
+      const startTime = Date.now();
+      const timerInterval = setInterval(() => {
+        const s = Math.floor((Date.now() - startTime) / 1000);
+        logTimer.textContent = `${String(Math.floor(s/60)).padStart(2,'0')}:${String(s%60).padStart(2,'0')}`;
+      }, 200);
+
+      try {
+        const formData = new FormData();
+        formData.append('factura', invoice);
+        selectedFiles.forEach((f, i) => formData.append(`file_${i}`, f, f.name));
+
+        const res = await fetch('/upload', { method: 'POST', body: formData });
+        if (!res.ok) throw new Error('Error del servidor: ' + res.status);
+
+        const reader = res.body.getReader();
+        const decoder = new TextDecoder();
+        let buf = '';
+
+        while (true) {
+          const { done, value } = await reader.read();
+          if (done) break;
+          buf += decoder.decode(value, { stream: true });
+          const parts = buf.split('\n');
+          buf = parts.pop();
+          for (const line of parts) {
+            if (!line.trim()) continue;
+            try {
+              const obj = JSON.parse(line);
+              if (obj.progress !== undefined) progressBar.style.width = obj.progress + '%';
+              if (obj.type === 'log') {
+                const cls = obj.msg.includes('ERROR') || obj.msg.includes('FAIL') ? 'log-error'
+                          : obj.msg.includes('OK') || obj.msg.includes('completado') ? 'log-success' : 'log-info';
+                appendLog(obj.msg, cls);
+              } else if (obj.type === 'done') {
+                appendLog(obj.msg, 'log-success');
+              }
+            } catch {}
+          }
+        }
+
+        if (buf.trim()) {
+          try {
+            const obj = JSON.parse(buf);
+            if (obj.type === 'log') appendLog(obj.msg);
+            if (obj.type === 'done') appendLog(obj.msg, 'log-success');
+            if (obj.progress !== undefined) progressBar.style.width = obj.progress + '%';
+          } catch {}
+        }
+
+        clearInterval(timerInterval);
+        logStatus.textContent = 'Completado';
+        logTimer.style.color = '#27ae60';
+        progressBar.style.width = '100%';
+        submitBtn.textContent = '¡Enviado!';
+        submitBtn.style.background = '#27ae60';
+        setTimeout(() => { submitBtn.textContent = 'Enviar'; submitBtn.style.background = ''; submitBtn.disabled = false; }, 3000);
+
+      } catch (err) {
+        clearInterval(timerInterval);
+        appendLog('Error: ' + err.message, 'log-error');
+        logStatus.textContent = 'Error';
+        logTimer.style.color = '#e74c3c';
+        submitBtn.textContent = 'Error';
+        submitBtn.style.background = '#e74c3c';
+        setTimeout(() => { submitBtn.textContent = 'Enviar'; submitBtn.style.background = ''; submitBtn.disabled = false; }, 3000);
+      }
+    });
+  </script>
+</body>
+</html>
