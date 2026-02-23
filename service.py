@@ -6,9 +6,9 @@ from datetime import datetime
 
 app = Flask(__name__)
 
-CARPETA_ORIGEN = r"\\sv-sys-05\Hosvi_Anex_Fact\FACTURAS"
+CARPETA_ORIGEN = "/mnt/facturas"
 PREFIX_PDF = "FEV_830066626_"
-WEBHOOK_URL = "https://n8n.medihelpservices.com/webhook-test/8f5dc3f2-4066-4497-a65d-5b9b50c0f2bd"
+WEBHOOK_URL = "https://n8n.medihelpservices.com/webhook/8f5dc3f2-4066-4497-a65d-5b9b50c0f2bd"
 
 
 @app.route("/")
@@ -195,11 +195,11 @@ def upload():
                                         else:
                                             yield log(f'  Factura {num_factura}: FAIL descargando PDF', progress_base)
                                     else:
-                                        yield log(f'  Factura {num_factura}: UrlPdf no encontrado en Response', progress_base)
+                                        yield log(f'  Factura {num_factura}: FAIL UrlPdf no encontrado en Response', progress_base)
                                 except Exception as e:
                                     yield log(f'  Factura {num_factura}: ERROR leyendo Response: {e}', progress_base)
                             else:
-                                yield log(f'  Factura {num_factura}: sin Response en la red', progress_base)
+                                yield log(f'  Factura {num_factura}: FAIL sin Response en la red', progress_base)
 
                         # Enviar los archivos de esta factura al webhook
                         yield log(f'  Factura {num_factura}: enviando {len(archivos_factura)} archivo(s)...', progress_base + 2)

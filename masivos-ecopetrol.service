@@ -1,0 +1,21 @@
+[Unit]
+Description=Masivos Ecopetrol - Servicio de envío masivo de facturas
+After=network.target
+
+[Service]
+Type=notify
+User=victor
+Group=victor
+WorkingDirectory=/home/victor/dev/Masivos-ecopetrol
+ExecStart=/home/victor/dev/Masivos-ecopetrol/venv/bin/gunicorn \
+    --bind 0.0.0.0:5000 \
+    --workers 2 \
+    --timeout 300 \
+    --access-logfile - \
+    --error-logfile - \
+    service:app
+Restart=always
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target
